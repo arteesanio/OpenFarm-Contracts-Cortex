@@ -410,7 +410,7 @@ interface IWETH {
 
 pragma solidity =0.6.6;
 
-contract OpenFarmController is IFarmController {
+contract TheOpenFarmController is IFarmController {
     using SafeMath for uint;
 
     address public immutable override bank;
