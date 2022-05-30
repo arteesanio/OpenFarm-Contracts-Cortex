@@ -3,9 +3,9 @@
 /**
 // UniswapV2 Fork
 
-// IUniswapV2Factory -> IOpenFarmBank
-// UniswapV2Factory -> OpenFarmBank
-// factory -> bank
+// IUniswapV2bank -> IOpenFarmBank
+// UniswapV2bank -> OpenFarmBank
+// bank -> bank
 
 // UniswapV2Library -> FarmLibrary
 // IUniswapV2Router01 -> IFarmControllerBase
@@ -322,7 +322,7 @@ library FarmLibrary {
                 hex'ff',
                 bank,
                 keccak256(abi.encodePacked(token0, token1)),
-                hex'96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f' // init code hash
+                hex'e4cf094e21e1c62ba813687137f5152c3e68af89e00d21661ddf4b3a564fba6f' // init code hash
             ))));
     }
 
@@ -421,9 +421,9 @@ contract TheOpenFarmController is IFarmController {
         _;
     }
 
-    constructor(address _factory, address _WETH) public {
-        bank = _factory;
-        WETH = _WETH;
+    constructor(address _bank, address _baseToken) public {
+        bank = _bank;
+        WETH = _baseToken;
     }
 
     receive() external payable {
