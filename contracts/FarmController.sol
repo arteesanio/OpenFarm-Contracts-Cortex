@@ -15,6 +15,7 @@
 // IUniswapV2Pair -> IOpenFarmVault
 // UniswapV2Pair -> OpenFarmVault
 
+// IERC20 -> IBaseToken
 // IUniswapV2ERC20 -> IFarmCoin 
 // UniswapV2ERC20 -> FarmCoin
 
@@ -43,7 +44,7 @@ interface IOpenFarmBank {
 
 pragma solidity >=0.6.0;
 
-// helper methods for interacting with ERC20 tokens and sending ETH that do not consistently return true/false
+// helper methods for interacting with BaseToken tokens and sending ETH that do not consistently return true/false
 library TransferHelper {
     function safeApprove(
         address token,
@@ -284,9 +285,6 @@ interface IOpenFarmVault {
     function initialize(address, address) external;
 }
 
-
-
-
 pragma solidity =0.6.6;
 
 // a library for performing overflow-safe math, courtesy of DappHub (https://github.com/dapphub/ds-math)
@@ -304,9 +302,6 @@ library SafeMath {
         require(y == 0 || (z = x * y) / y == x, 'ds-math-mul-overflow');
     }
 }
-
-
-
 
 pragma solidity >=0.5.0;
 
@@ -387,12 +382,9 @@ library FarmLibrary {
     }
 }
 
-
-
-
 pragma solidity >=0.5.0;
 
-interface IERC20 {
+interface IBaseToken {
     event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
 
@@ -408,9 +400,6 @@ interface IERC20 {
     function transferFrom(address from, address to, uint value) external returns (bool);
 }
 
-
-
-
 pragma solidity >=0.5.0;
 
 interface IWETH {
@@ -419,15 +408,7 @@ interface IWETH {
     function withdraw(uint) external;
 }
 
-
-
-
 pragma solidity =0.6.6;
-
-
-
-
-
 
 contract OpenFarmController is IFarmController {
     using SafeMath for uint;
@@ -607,7 +588,7 @@ contract OpenFarmController is IFarmController {
             address(this),
             deadline
         );
-        TransferHelper.safeTransfer(token, to, IERC20(token).balanceOf(address(this)));
+        TransferHelper.safeTransfer(token, to, IBaseToken(token).balanceOf(address(this)));
         IWETH(WETH).withdraw(amountETH);
         TransferHelper.safeTransferETH(to, amountETH);
     }
@@ -749,7 +730,7 @@ contract OpenFarmController is IFarmController {
             { // scope to avoid stack too deep errors
             (uint reserve0, uint reserve1,) = pair.getReserves();
             (uint reserveInput, uint reserveOutput) = input == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
-            amountInput = IERC20(input).balanceOf(address(pair)).sub(reserveInput);
+            amountInput = IBaseToken(input).balanceOf(address(pair)).sub(reserveInput);
             amountOutput = FarmLibrary.getAmountOut(amountInput, reserveInput, reserveOutput);
             }
             (uint amount0Out, uint amount1Out) = input == token0 ? (uint(0), amountOutput) : (amountOutput, uint(0));
@@ -768,10 +749,10 @@ contract OpenFarmController is IFarmController {
         TransferHelper.safeTransferFrom(
             path[0], msg.sender, FarmLibrary.pairFor(bank, path[0], path[1]), amountIn
         );
-        uint balanceBefore = IERC20(path[path.length - 1]).balanceOf(to);
+        uint balanceBefore = IBaseToken(path[path.length - 1]).balanceOf(to);
         _swapSupportingFeeOnTransferTokens(path, to);
         require(
-            IERC20(path[path.length - 1]).balanceOf(to).sub(balanceBefore) >= amountOutMin,
+            IBaseToken(path[path.length - 1]).balanceOf(to).sub(balanceBefore) >= amountOutMin,
             'FarmController: INSUFFICIENT_OUTPUT_AMOUNT'
         );
     }
@@ -791,10 +772,10 @@ contract OpenFarmController is IFarmController {
         uint amountIn = msg.value;
         IWETH(WETH).deposit{value: amountIn}();
         assert(IWETH(WETH).transfer(FarmLibrary.pairFor(bank, path[0], path[1]), amountIn));
-        uint balanceBefore = IERC20(path[path.length - 1]).balanceOf(to);
+        uint balanceBefore = IBaseToken(path[path.length - 1]).balanceOf(to);
         _swapSupportingFeeOnTransferTokens(path, to);
         require(
-            IERC20(path[path.length - 1]).balanceOf(to).sub(balanceBefore) >= amountOutMin,
+            IBaseToken(path[path.length - 1]).balanceOf(to).sub(balanceBefore) >= amountOutMin,
             'FarmController: INSUFFICIENT_OUTPUT_AMOUNT'
         );
     }
@@ -815,7 +796,7 @@ contract OpenFarmController is IFarmController {
             path[0], msg.sender, FarmLibrary.pairFor(bank, path[0], path[1]), amountIn
         );
         _swapSupportingFeeOnTransferTokens(path, address(this));
-        uint amountOut = IERC20(WETH).balanceOf(address(this));
+        uint amountOut = IBaseToken(WETH).balanceOf(address(this));
         require(amountOut >= amountOutMin, 'FarmController: INSUFFICIENT_OUTPUT_AMOUNT');
         IWETH(WETH).withdraw(amountOut);
         TransferHelper.safeTransferETH(to, amountOut);
