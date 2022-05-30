@@ -10,7 +10,7 @@
 // IUniswapV2Router02 -> IFarmController
 // UniswapV2Router02 -> OpenFarmController
 
-// IUniswapV2Pair -> IFarmVault
+// IUniswapV2Pair -> IOpenFarmVault
 
 
 pragma solidity >=0.5.0;
@@ -223,7 +223,7 @@ interface IFarmController is IFarmControllerBase {
 
 pragma solidity >=0.5.0;
 
-interface IFarmVault {
+interface IOpenFarmVault {
     event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
 
@@ -324,7 +324,7 @@ library FarmLibrary {
     // fetches and sorts the reserves for a pair
     function getReserves(address bank, address tokenA, address tokenB) internal view returns (uint reserveA, uint reserveB) {
         (address token0,) = sortTokens(tokenA, tokenB);
-        (uint reserve0, uint reserve1,) = IFarmVault(pairFor(bank, tokenA, tokenB)).getReserves();
+        (uint reserve0, uint reserve1,) = IOpenFarmVault(pairFor(bank, tokenA, tokenB)).getReserves();
         (reserveA, reserveB) = tokenA == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
     }
 
@@ -483,7 +483,7 @@ contract OpenFarmController is IFarmController {
         address pair = FarmLibrary.pairFor(bank, tokenA, tokenB);
         TransferHelper.safeTransferFrom(tokenA, msg.sender, pair, amountA);
         TransferHelper.safeTransferFrom(tokenB, msg.sender, pair, amountB);
-        liquidity = IFarmVault(pair).mint(to);
+        liquidity = IOpenFarmVault(pair).mint(to);
     }
     function addLiquidityETH(
         address token,
@@ -505,7 +505,7 @@ contract OpenFarmController is IFarmController {
         TransferHelper.safeTransferFrom(token, msg.sender, pair, amountToken);
         IWETH(WETH).deposit{value: amountETH}();
         assert(IWETH(WETH).transfer(pair, amountETH));
-        liquidity = IFarmVault(pair).mint(to);
+        liquidity = IOpenFarmVault(pair).mint(to);
         // refund dust eth, if any
         if (msg.value > amountETH) TransferHelper.safeTransferETH(msg.sender, msg.value - amountETH);
     }
@@ -521,8 +521,8 @@ contract OpenFarmController is IFarmController {
         uint deadline
     ) public virtual override ensure(deadline) returns (uint amountA, uint amountB) {
         address pair = FarmLibrary.pairFor(bank, tokenA, tokenB);
-        IFarmVault(pair).transferFrom(msg.sender, pair, liquidity); // send liquidity to pair
-        (uint amount0, uint amount1) = IFarmVault(pair).burn(to);
+        IOpenFarmVault(pair).transferFrom(msg.sender, pair, liquidity); // send liquidity to pair
+        (uint amount0, uint amount1) = IOpenFarmVault(pair).burn(to);
         (address token0,) = FarmLibrary.sortTokens(tokenA, tokenB);
         (amountA, amountB) = tokenA == token0 ? (amount0, amount1) : (amount1, amount0);
         require(amountA >= amountAMin, 'FarmController: INSUFFICIENT_A_AMOUNT');
@@ -561,7 +561,7 @@ contract OpenFarmController is IFarmController {
     ) external virtual override returns (uint amountA, uint amountB) {
         address pair = FarmLibrary.pairFor(bank, tokenA, tokenB);
         uint value = approveMax ? uint(-1) : liquidity;
-        IFarmVault(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
+        IOpenFarmVault(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
         (amountA, amountB) = removeLiquidity(tokenA, tokenB, liquidity, amountAMin, amountBMin, to, deadline);
     }
     function removeLiquidityETHWithPermit(
@@ -575,7 +575,7 @@ contract OpenFarmController is IFarmController {
     ) external virtual override returns (uint amountToken, uint amountETH) {
         address pair = FarmLibrary.pairFor(bank, token, WETH);
         uint value = approveMax ? uint(-1) : liquidity;
-        IFarmVault(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
+        IOpenFarmVault(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
         (amountToken, amountETH) = removeLiquidityETH(token, liquidity, amountTokenMin, amountETHMin, to, deadline);
     }
 
@@ -612,7 +612,7 @@ contract OpenFarmController is IFarmController {
     ) external virtual override returns (uint amountETH) {
         address pair = FarmLibrary.pairFor(bank, token, WETH);
         uint value = approveMax ? uint(-1) : liquidity;
-        IFarmVault(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
+        IOpenFarmVault(pair).permit(msg.sender, address(this), value, deadline, v, r, s);
         amountETH = removeLiquidityETHSupportingFeeOnTransferTokens(
             token, liquidity, amountTokenMin, amountETHMin, to, deadline
         );
@@ -627,7 +627,7 @@ contract OpenFarmController is IFarmController {
             uint amountOut = amounts[i + 1];
             (uint amount0Out, uint amount1Out) = input == token0 ? (uint(0), amountOut) : (amountOut, uint(0));
             address to = i < path.length - 2 ? FarmLibrary.pairFor(bank, output, path[i + 2]) : _to;
-            IFarmVault(FarmLibrary.pairFor(bank, input, output)).swap(
+            IOpenFarmVault(FarmLibrary.pairFor(bank, input, output)).swap(
                 amount0Out, amount1Out, to, new bytes(0)
             );
         }
@@ -733,7 +733,7 @@ contract OpenFarmController is IFarmController {
         for (uint i; i < path.length - 1; i++) {
             (address input, address output) = (path[i], path[i + 1]);
             (address token0,) = FarmLibrary.sortTokens(input, output);
-            IFarmVault pair = IFarmVault(FarmLibrary.pairFor(bank, input, output));
+            IOpenFarmVault pair = IOpenFarmVault(FarmLibrary.pairFor(bank, input, output));
             uint amountInput;
             uint amountOutput;
             { // scope to avoid stack too deep errors
