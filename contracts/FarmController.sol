@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+/**
 // UniswapV2 Fork
 
 // IUniswapV2Factory -> IOpenFarmBank
+// UniswapV2Factory -> OpenFarmBank
 // factory -> bank
 
 // UniswapV2Library -> FarmLibrary
@@ -11,6 +13,14 @@
 // UniswapV2Router02 -> OpenFarmController
 
 // IUniswapV2Pair -> IOpenFarmVault
+// UniswapV2Pair -> OpenFarmVault
+
+// IUniswapV2ERC20 -> IFarmCoin 
+// UniswapV2ERC20 -> FarmCoin
+
+// IUniswapV2Callee -> IFarmer
+// uniswapV2Call -> farmCall
+**/
 
 
 pragma solidity >=0.5.0;
